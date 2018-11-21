@@ -1,29 +1,19 @@
 #include <iostream>
 #include "ray.h"
+#include "sphere.h"
 
-float hit_sphere(const vec3<float> &center, float radius, const ray<float> &r) {
-    vec3<float> oc = r.origin() - center;
-    float a = dot(r.direction(), r.direction());
-    float b = 2.0 * dot(oc, r.direction());
-    float c = dot(oc, oc) - (radius * radius);
-    float discriminant = b*b - 4*a*c;
-    if (discriminant < 0) {
-        return -1.0f;
-    } else {
-        return (-b - sqrt(discriminant)) / (2.0*a);
-    }
-}
 
 vec3<float> color(const ray<float> &r) {
-    float t = hit_sphere(vec3<float>(0,0,-1), 0.5, r);
-    if (t > 0.0){
-        vec3<float> N =
-            unit_vector(r.point_at_parameter(t) - vec3<float>(0,0,-1));
-            return 0.5f * vec3<float>(N.x()+1, N.y()+1, N.z() + 1);
+    sphere s(vec3<float>(0,0,-1), 0.5);
+    hit_record rec;
+    if(s.hit(r, 0, 1, rec)) {
+        return 0.5f * vec3<float>(rec.normal.x()+1, rec.normal.y()+1, rec.normal.z()+1);
+    } else {
+        // We did not hit the sphere, draw the background
+        vec3<float> unit_direction(unit_vector(r.direction()));
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return (1.0f-t) * vec3<float>(1.0,1.0,1.0) + t * vec3<float>(0.5, 0.7, 1.0);
     }
-    vec3<float> unit_direction(unit_vector(r.direction()));
-    t = 0.5 * (unit_direction.y() + 1.0);
-    return (1.0f-t) * vec3<float>(1.0,1.0,1.0) + t * vec3<float>(0.5, 0.7, 1.0);
 }
 
 int main() {
