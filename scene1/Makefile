@@ -2,7 +2,7 @@ INCLUDES += -I../include/
 CXXFLAGS += $(INCLUDES) -O2
 
 all: scene.ppm scene.png
-scene.o: ../include/vec3.hpp ../include/ray.h ../include/sphere.h
+scene.o: $(wildcard ../include/*.hpp ../include/*.h)
 
 scene.ppm: scene
 	./$< >$@
