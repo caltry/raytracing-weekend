@@ -2,6 +2,7 @@
 #include "ray.h"
 #include "sphere.h"
 #include "hittable_list.h"
+#include "camera.h"
 
 vec3<float> color(const ray<float> &r, hittable *world) {
     hit_record rec;
@@ -38,6 +39,7 @@ vec3<float> color(const ray<float> &r, hittable *world) {
 int main() {
     int nx = 200;
     int ny = 100;
+    int ns = 100;
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
     vec3<float> lower_left_corner(-2.0, -1.0, -1.0);
     vec3<float> horizontal(4.0, 0.0, 0.0);
@@ -50,14 +52,19 @@ int main() {
     hittable *objects[] = {&s, &s2, &floor};
     hittable_list list(objects, 3);
 
+    camera cam;
+
     for(int j = ny-1; j >= 0; j--) {
         for(int i = 0; i < nx; i++) {
-            float u = float(i) / float(nx);
-            float v = float(j) / float(ny);
-            ray<float> r(origin, lower_left_corner
-                                + u * horizontal
-                                + v * vertical);
-            vec3<float> col(color(r, &list));
+            // Capture multiple samples within a pixel
+            vec3<float> col(0,0,0);
+            for (int s=0; s < ns; s++) {
+                float u = float(i + drand48()) / float(nx);
+                float v = float(j + drand48()) / float(ny);
+                ray<float> r = cam.get_ray(u, v);
+                col += color(r, &list);
+            }
+            col /= float(ns);
             int ir = int(255.99 * col.r());
             int ig = int(255.99 * col.g());
             int ib = int(255.99 * col.b());
