@@ -4,11 +4,31 @@
 #include "hittable_list.h"
 #include "camera.h"
 
+vec3<float> random_in_unit_sphere() {
+    vec3<float> p;
+    do {
+        // Produce a random point in [-1,1) for all dimensions
+        p = 2.0f * vec3<float>(drand48(), drand48(), drand48())
+            - vec3<float>(1, 1, 1);
+        // And only allow shorter ones out (ones that fit in a unit-circle)
+    } while (p.squared_length() >= 1.0);
+    // hmm: Why do I do this in a while-loop instead of converting the vector
+    // to a unit-vector?  Perhaps this would build a bias towards the edges of
+    // the circle?  I bet I could build an image to simulate this!
+    return p;
+}
+
 vec3<float> color(const ray<float> &r, hittable *world) {
     hit_record rec;
-    if (world->hit(r, 0, MAXFLOAT, rec)) {
+    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
 #if 1
-        return 0.5f * vec3<float>(rec.normal.x()+1, rec.normal.y()+1, rec.normal.z()+1);
+        // Is this 'target' the destination of a recast ray?
+        // No, 'target' is more like a vector, that has no source point and no
+        // known destination point yet.
+        // Also, couldn't I just get rid of rec.p?  We cancel it out anyways
+        // when building the ray...
+        vec3<float> target = rec.p + rec.normal + random_in_unit_sphere();
+        return 0.5f * color(ray<float>(rec.p, target - rec.p), world);
 #else
         bool red    = rec.normal.x() > 0 && rec.normal.y() > 0;
         bool green  = rec.normal.x() > 0 && rec.normal.y() < 0;
@@ -65,6 +85,10 @@ int main() {
                 col += color(r, &list);
             }
             col /= float(ns);
+
+            // Gamma correction
+            col = vec3<float>(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+
             int ir = int(255.99 * col.r());
             int ig = int(255.99 * col.g());
             int ib = int(255.99 * col.b());
