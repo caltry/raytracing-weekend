@@ -2,6 +2,8 @@
 
 #include "ray.h"
 
+class material;
+
 struct hit_record {
     float t;
     // This is a point on an object relative to the entire scene.
@@ -9,6 +11,7 @@ struct hit_record {
     // This is a point normalized to the center of the object, not a normal
     // vector from the origin.
     vec3<float> normal;
+    material *mat_ptr;
 };
 
 class hittable {

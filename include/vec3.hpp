@@ -167,3 +167,8 @@ unit_vector(const vec3<T> &v)
 {
     return v.unit_vector();
 }
+
+template<typename T> inline vec3<T>
+reflect(const vec3<T> &vector, const vec3<T> &surface_normal) {
+    return vector - 2*dot(vector,surface_normal)*surface_normal;
+}

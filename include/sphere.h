@@ -5,19 +5,22 @@
 class sphere: public hittable {
 public:
     sphere() {};
-    sphere(vec3<float> center, float radius) :
+    sphere(vec3<float> center, float radius, material *material) :
         mCenter(center),
-        mRadius(radius)
+        mRadius(radius),
+        mMaterial(material)
         {};
     virtual bool hit(const ray<float> &r, float tmin, float tmax,
                      hit_record &rec) const;
     vec3<float> mCenter;
     float mRadius;
+    material *mMaterial;
 };
 
 bool
 sphere::hit(const ray<float> &r, float tmin, float tmax, hit_record &rec) const
 {
+    rec.mat_ptr = mMaterial;
     vec3<float> oc = r.origin() - mCenter;
     float a = dot(r.direction(), r.direction());
     float b = 2.0 * dot(oc, r.direction());
