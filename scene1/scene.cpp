@@ -38,11 +38,11 @@ int main() {
     vec3<float> origin(0, 0, 0);
 
     sphere s1(vec3<float>(-1, 0, -1), 0.5,
-              new metal(vec3<float>(0.8, 0.8, 0.8)));
+              new metal(vec3<float>(0.8, 0.8, 0.8), 0.1));
     sphere s2(vec3<float>(0,0,-1), 0.5,
               new lambertian(vec3<float>(0.8, 0.3, 0.3)));
     sphere s3(vec3<float>(1, 0, -1), 0.5,
-              new metal(vec3<float>(0.8, 0.6, 0.2)));
+              new metal(vec3<float>(0.8, 0.6, 0.2), 0.8));
     sphere floor(vec3<float>(0, -100.5, -1), 100,
               new lambertian(vec3<float>(0.5, 0.5, 0.5)));
     hittable *objects[] = {&s1, &s2, &s3, &floor};

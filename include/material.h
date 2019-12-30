@@ -81,19 +81,23 @@ private:
 
 class metal : public material {
 public:
-    metal(vec3<float> albedo) : m_albedo(albedo) {}
+    metal(vec3<float> albedo, float fuzzyness = 0) :
+        m_albedo(albedo),
+        m_fuzzyness(fuzzyness)
+        {}
     virtual bool scatter(const ray<float> &r_in, struct hit_record &rec, 
                          vec3<float> &attenuation, ray<float> &r_out) const;
 
 private:
     vec3<float> m_albedo;
+    float m_fuzzyness;
 };
 
 bool metal::scatter(const ray<float> &r_in, struct hit_record &rec, 
                     vec3<float> &attenuation, ray<float> &r_out) const
 {
     vec3<float> reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-    r_out = ray<float>(rec.p, reflected);
+    r_out = ray<float>(rec.p, reflected + (m_fuzzyness * random_in_unit_sphere()));
     attenuation = m_albedo;
     return (dot(r_out.direction(), rec.normal) > 0);
 }
