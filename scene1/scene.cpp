@@ -46,7 +46,7 @@ int main() {
     sphere floor(vec3<float>(0, -100.5, -1), 100,
               new lambertian(vec3<float>(0.5, 0.5, 0.5)));
     hittable *objects[] = {&s1, &s2, &s3, &floor};
-    hittable_list list(objects, 4);
+    hittable_list list(objects, sizeof(objects)/sizeof(*objects));
 
     camera cam;
 
