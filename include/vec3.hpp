@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 
-template <typename T> class vec3
+template <typename T = float> class vec3
 {
 public:
     vec3() {}
@@ -171,4 +171,55 @@ unit_vector(const vec3<T> &v)
 template<typename T> inline vec3<T>
 reflect(const vec3<T> &vector, const vec3<T> &surface_normal) {
     return vector - 2*dot(vector,surface_normal)*surface_normal;
+}
+
+/**
+ * Reflection, for glass.  The angle that glass reflects varies with angle.
+ */
+template<typename T> inline T
+schlick(T cosine, float refractive_index) {
+    float r0 = (1 - refractive_index) / (1 + refractive_index);
+    r0 *= r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+/**
+ * Refract, according to Snell's Law.
+ *
+ * Returns true if refraction happened.
+ */
+// TODO: It's not clear how this was derived from Snell's law.
+template<typename T> inline bool
+refract(const vec3<T> &v1, const vec3<T> &n, T ni_over_nt, vec3<T> &out) {
+    vec3<T> uv = unit_vector(v1);
+    T dt = dot(uv, n); // This is some sort of magnitude
+    T discriminant = 1.0 - (ni_over_nt * ni_over_nt) * (1-dt*dt);
+    if (discriminant > 0) {
+        // According to https://en.wikipedia.org/wiki/Snell%27s_law#Vector_form
+        // I would expect  (uv - n*dt) to be just 'dt'.  Maybe this is a
+        // reduction because this later needs to be multiplied by 'n' and
+        // it's already been distributed?  That explains n * sqrt(...).  And it
+        // would explain n * dt if there weren't any parens there.  Did things
+        // just get shuffled around form the way wikipedia has it?
+        out = ni_over_nt * (uv - n*dt) - n * sqrt(discriminant);
+#if 0
+        // This version is eqivilant and is a closer match to what appears in
+        // wikipedia.  Maybe it got reordered for efficiency or to retain
+        // floating point precision?
+        out = ni_over_nt * uv + n * dt - n * sqrt(discriminant);
+        out = ni_over_nt * uv + n * (dt - sqrt(discriminant);
+
+        // Another deviation I'm trying to find from the forumla on Wikipedia,
+        // why operate on the unit vector form of v1 instead of v1 itself?  It
+        // seems like perhaps the magnitude isn't important for this equation,
+        // just direction.  But if that's true it shouldn't matter if we're
+        // operating on the unit vector or the original vector.  I guess
+        // creating the dot product (dt) is sensitive to the magnitude of v1
+        // and we know 'n' is always a unit vector (a promise made by other
+        // parts of the ray tracer).
+#endif
+        return true;
+    } else {
+        return false;
+    }
 }

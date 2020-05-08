@@ -1,11 +1,11 @@
 INCLUDES += -I../include/
-CXXFLAGS += $(INCLUDES) -O2
+CXXFLAGS += $(INCLUDES) -O2 -std=c++11
 
-all: scene.ppm scene.png
+all: scene.png
 scene.o: $(wildcard ../include/*.hpp ../include/*.h)
 
 scene.ppm: scene
-	./$< >$@
+	time ./$< >$@
 
 %.png: %.ppm
 	convert $< $@

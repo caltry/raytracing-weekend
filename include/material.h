@@ -19,14 +19,14 @@ vec3<float> random_in_unit_sphere() {
 
 class material {
 public:
-    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec, 
+    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
                          vec3<float> &attenuation, ray<float> &r_out) const = 0;
 };
 
 /* Like a lambertian material, but the color changes based on where the object
  * was struck */
 class debugTexture : public material {
-    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec, 
+    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
                          vec3<float> &attenuation, ray<float> &r_out) const
     {
         bool red    = rec.normal.x() > 0 && rec.normal.y() > 0;
@@ -61,7 +61,7 @@ class lambertian : public material {
 public:
     lambertian(const vec3<float> &albedo) : m_albedo(albedo) {}
 
-    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec, 
+    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
                          vec3<float> &attenuation, ray<float> &r_out) const
     {
         // Is this 'target' the destination of a recast ray?
@@ -85,7 +85,7 @@ public:
         m_albedo(albedo),
         m_fuzzyness(fuzzyness)
         {}
-    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec, 
+    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
                          vec3<float> &attenuation, ray<float> &r_out) const;
 
 private:
@@ -93,7 +93,7 @@ private:
     float m_fuzzyness;
 };
 
-bool metal::scatter(const ray<float> &r_in, struct hit_record &rec, 
+bool metal::scatter(const ray<float> &r_in, struct hit_record &rec,
                     vec3<float> &attenuation, ray<float> &r_out) const
 {
     vec3<float> reflected = reflect(unit_vector(r_in.direction()), rec.normal);
@@ -101,3 +101,41 @@ bool metal::scatter(const ray<float> &r_in, struct hit_record &rec,
     attenuation = m_albedo;
     return (dot(r_out.direction(), rec.normal) > 0);
 }
+
+class dielectric : public material {
+public:
+    dielectric(float ri /* refractive index*/) : ref_idx(ri) {}
+
+    virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
+                         vec3<float> &attenuation, ray<float> &scattered) const {
+        vec3<float> outward_normal;
+        vec3<float> reflected = reflect(r_in.direction(), rec.normal);
+        // Undocumented by the author, but ni_over_nt seems to be the ratio of
+        // refractive indices of two materials.
+        float ni_over_nt;
+        attenuation = vec3<float>(1.0, 1.0, 1.0);
+        vec3<float> refracted;
+
+        // This method for calculating ni_over_nt (which is the ratio of
+        // refractive indexes for two materials) assumes that the refractive
+        // index of the other material is 1.
+        if (dot(r_in.direction(), rec.normal) > 0) {
+            outward_normal = -rec.normal;
+            ni_over_nt = ref_idx;
+        } else {
+            outward_normal = rec.normal;
+            ni_over_nt = 1.0/ref_idx;
+        }
+
+        if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
+            scattered = ray<float>(rec.p, refracted);
+        } else {
+            // Internal reflection
+            scattered = ray<float>(rec.p, reflected);
+        }
+
+        return true;
+    }
+
+    float ref_idx; // refractive index
+};
