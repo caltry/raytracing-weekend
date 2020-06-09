@@ -11,7 +11,7 @@ public:
       m_origin(0.0, 0.0, 0.0)
         {}
 
-    ray<float> get_ray(float u, float v)
+    ray<float> get_ray(float u, float v) const
     {
         ray<float> r(m_origin, m_lower_left_corner
                                + u * m_horizontal

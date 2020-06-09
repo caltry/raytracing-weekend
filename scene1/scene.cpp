@@ -1,11 +1,14 @@
+#include <future>
 #include <iostream>
+#include <list>
+#include <vector>
 #include "ray.h"
 #include "sphere.h"
 #include "hittable_list.h"
 #include "camera.h"
 #include "material.h"
 
-vec3<float> color(const ray<float> &r, hittable *world, int depth=0) {
+vec3<float> color(const ray<float> &r, const hittable *world, int depth=0) {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ray<float> scattered;
@@ -27,6 +30,121 @@ vec3<float> color(const ray<float> &r, hittable *world, int depth=0) {
 #define SCALE 8
 #endif
 
+#ifndef PARALLEL
+#define PARALLEL 1
+#endif
+
+#ifndef ANTIALIAS
+#define ANTIALIAS 1
+#endif
+
+thread_local unsigned short rand_seed[3] = {0x1234, 0xabcd, 0x330e};
+
+vec3<>
+render_pixel(const camera &cam, const hittable_list &objects,
+             int j, int i, int ny, int nx)
+{
+    // Capture multiple samples within a pixel
+    vec3<float> col(0,0,0);
+    int ns = 100;
+
+// Make antialiasing optional for faster debug renders
+#if ANTIALIAS
+    for (int s=0; s < ns; s++) {
+        float u = float(i + erand48(rand_seed)) / float(nx);
+        float v = float(j + erand48(rand_seed)) / float(ny);
+        ray<float> &&r = cam.get_ray(u, v);
+        col += color(r, &objects);
+    }
+    col /= float(ns);
+#else
+    ray<float> r = cam.get_ray(i/float(nx), j/float(ny));
+    col = color(r, &objects);
+#endif
+
+    // Gamma correction
+    return vec3<float>(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+}
+
+std::list<vec3<> >
+render_row(const camera &cam, const hittable_list &objects, int ny, int nx, int row)
+{
+    std::list<vec3<> > output;
+    for(int i = 0; i < nx; i++) {
+        output.push_back(render_pixel(cam, objects, row, i, ny, nx));
+    }
+
+    return output;
+}
+
+std::list<std::vector<vec3<> > >
+render_rows(const camera &cam, const hittable_list &objects, int ny, int nx,
+            int startRow, int endRow)
+{
+    int numRows = endRow-startRow;
+    std::list<std::vector<vec3<> > > output;
+    int rowMultiplier = 0;
+    for(int j = endRow-1; j >= startRow; j--) {
+        std::vector<vec3<> > row(nx);
+        for(int i = 0; i < nx; i++) {
+            row[i] = render_pixel(cam, objects, j, i, ny, nx);
+        }
+        output.push_back(row);
+        rowMultiplier += nx;
+    }
+
+    return output;
+}
+
+inline void
+drawPixel(const vec3<> &pixel)
+{
+    int ir = int(255.99 * pixel.r());
+    int ig = int(255.99 * pixel.g());
+    int ib = int(255.99 * pixel.b());
+
+    std::cout << ir << " " << ig << " " << ib << std::endl;
+}
+
+std::list<vec3<> >
+render_parallel(const camera &cam, const hittable_list &objects, int ny, int nx)
+{
+    typedef std::list<std::vector<vec3<> > > RenderedRow;
+    std::list<std::future<RenderedRow> > futures;
+    int threads = 4;
+    int rowsPerThread = ny / threads;
+    for(int j = ny-1; j >= 0; j -= rowsPerThread) {
+        futures.push_back(std::async
+            (render_rows, cam, objects, ny, nx, j + 1 - rowsPerThread, j+1));
+        fprintf(stderr, "render_parallel: started future\n");
+    }
+
+    for(auto f = futures.begin(); f != futures.end(); f++) {
+        auto &&batch = f->get();
+        for(auto row = batch.begin(); row != batch.end(); row++) {
+            for(auto pixel = row->begin(); pixel != row->end(); pixel++) {
+                drawPixel(*pixel);
+            }
+        }
+        fprintf(stderr, "render_parallel: processed future\n");
+    }
+
+    return std::list<vec3<> >();
+}
+
+std::list<vec3<> >
+render(const camera &cam, const hittable_list &objects, int ny, int nx)
+{
+    std::list<vec3<> > output;
+    for(int j = ny-1; j >= 0; j--) {
+        for(int i = 0; i < nx; i++) {
+            output.push_back(render_pixel(cam, objects, j, i, ny, nx));
+        }
+    }
+
+    return output;
+}
+
 int main() {
     int nx = SCALE * 200;
     int ny = SCALE * 100;
@@ -37,41 +155,41 @@ int main() {
     vec3<float> vertical(0, 2, 0);
     vec3<float> origin(0, 0, 0);
 
+#if 0
+    // This is basically the first scene, but modified as new materials were
+    // developed, at least through chapter 8.
     sphere s1(vec3<float>(-1, 0, -1), 0.5,
               new metal(vec3<float>(0.8, 0.8, 0.8), 0.1));
     sphere s2(vec3<float>(0,0,-1), 0.5,
               new lambertian(vec3<float>(0.8, 0.3, 0.3)));
+#if 0
     sphere s3(vec3<float>(1, 0, -1), 0.5,
               new metal(vec3<float>(0.8, 0.6, 0.2), 0.8));
+#else
+    sphere s3(vec3<float>(1, 0, -1), 0.5, new dielectric(1.5));
+#endif
     sphere floor(vec3<float>(0, -100.5, -1), 100,
               new lambertian(vec3<float>(0.5, 0.5, 0.5)));
+#else
+    // This is a scene that shows off refraction.
+	sphere s1(vec3<>(0,0,-1), 0.5, new lambertian(vec3<>(0.1, 0.2, 0.5)));
+	sphere s2(vec3<>(1,0,-1), 0.5, new metal(vec3<>(0.8, 0.6, 0.2), 0.0));
+	sphere s3(vec3<>(-1,0,-1), 0.5, new dielectric(1.5));
+	sphere floor(vec3<>(0,-100.5,-1), 100, new lambertian(vec3<>(1.8, 0.8, 0.0)));
+#endif
+
     hittable *objects[] = {&s1, &s2, &s3, &floor};
     hittable_list list(objects, sizeof(objects)/sizeof(*objects));
 
     camera cam;
 
+#if PARALLEL
+    auto frame = render_parallel(cam, list, ny, nx);
+#else
     for(int j = ny-1; j >= 0; j--) {
         for(int i = 0; i < nx; i++) {
             // Capture multiple samples within a pixel
-            vec3<float> col(0,0,0);
-
-// Make antialiasing optional for faster debug renders
-#define ANTIALIAS 1
-#if ANTIALIAS
-            for (int s=0; s < ns; s++) {
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
-                ray<float> r = cam.get_ray(u, v);
-                col += color(r, &list);
-            }
-            col /= float(ns);
-#else
-            ray<float> r = cam.get_ray(i/float(nx), j/float(ny));
-            col = color(r, &list);
-#endif
-
-            // Gamma correction
-            col = vec3<float>(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+            vec3<> col = render_pixel(cam, list, j, i, ny, nx);
 
             int ir = int(255.99 * col.r());
             int ig = int(255.99 * col.g());
@@ -80,5 +198,6 @@ int main() {
             std::cout << ir << " " << ig << " " << ib << std::endl;
         }
     }
+#endif
     return 0;
 }

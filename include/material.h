@@ -4,10 +4,11 @@
 #include "hittable.h"
 
 vec3<float> random_in_unit_sphere() {
+    thread_local unsigned short rand_seed[3] = {0x1234, 0xabcd, 0x330e};
     vec3<float> p;
     do {
         // Produce a random point in [-1,1) for all dimensions
-        p = 2.0f * vec3<float>(drand48(), drand48(), drand48())
+        p = 2.0f * vec3<float>(erand48(rand_seed), erand48(rand_seed), erand48(rand_seed))
             - vec3<float>(1, 1, 1);
         // And only allow shorter ones out (ones that fit in a unit-circle)
     } while (p.squared_length() >= 1.0);
