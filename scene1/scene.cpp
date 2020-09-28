@@ -175,10 +175,11 @@ int main() {
 	sphere s1(vec3<>(0,0,-1), 0.5, new lambertian(vec3<>(0.1, 0.2, 0.5)));
 	sphere s2(vec3<>(1,0,-1), 0.5, new metal(vec3<>(0.8, 0.6, 0.2), 0.0));
 	sphere s3(vec3<>(-1,0,-1), 0.5, new dielectric(1.5));
+	sphere s4(vec3<>(-1,0,-1), -0.45, new dielectric(1.5)); // inside of bubble
 	sphere floor(vec3<>(0,-100.5,-1), 100, new lambertian(vec3<>(1.8, 0.8, 0.0)));
 #endif
 
-    hittable *objects[] = {&s1, &s2, &s3, &floor};
+    hittable *objects[] = {&s1, &s2, &s3, &s4, &floor};
     hittable_list list(objects, sizeof(objects)/sizeof(*objects));
 
     camera cam;

@@ -109,6 +109,7 @@ public:
 
     virtual bool scatter(const ray<float> &r_in, struct hit_record &rec,
                          vec3<float> &attenuation, ray<float> &scattered) const {
+        thread_local unsigned short rand_seed[3] = {0x1234, 0xabcd, 0x330e};
         vec3<float> outward_normal;
         vec3<float> reflected = reflect(r_in.direction(), rec.normal);
         // Undocumented by the author, but ni_over_nt seems to be the ratio of
@@ -116,6 +117,8 @@ public:
         float ni_over_nt;
         attenuation = vec3<float>(1.0, 1.0, 1.0);
         vec3<float> refracted;
+        float reflect_probability;
+        float cosine;
 
         // This method for calculating ni_over_nt (which is the ratio of
         // refractive indexes for two materials) assumes that the refractive
@@ -123,16 +126,24 @@ public:
         if (dot(r_in.direction(), rec.normal) > 0) {
             outward_normal = -rec.normal;
             ni_over_nt = ref_idx;
+            cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
         } else {
             outward_normal = rec.normal;
             ni_over_nt = 1.0/ref_idx;
+            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
         }
 
         if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
-            scattered = ray<float>(rec.p, refracted);
+            reflect_probability = schlick(cosine, ref_idx);
         } else {
             // Internal reflection
+            reflect_probability =  1.0;
+        }
+
+        if (erand48(rand_seed) < reflect_probability) {
             scattered = ray<float>(rec.p, reflected);
+        } else {
+            scattered = ray<float>(rec.p, refracted);
         }
 
         return true;

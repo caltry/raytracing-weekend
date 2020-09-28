@@ -207,7 +207,7 @@ refract(const vec3<T> &v1, const vec3<T> &n, T ni_over_nt, vec3<T> &out) {
         // wikipedia.  Maybe it got reordered for efficiency or to retain
         // floating point precision?
         out = ni_over_nt * uv + n * dt - n * sqrt(discriminant);
-        out = ni_over_nt * uv + n * (dt - sqrt(discriminant);
+        out = ni_over_nt * uv + n * (dt - sqrt(discriminant));
 
         // Another deviation I'm trying to find from the forumla on Wikipedia,
         // why operate on the unit vector form of v1 instead of v1 itself?  It
