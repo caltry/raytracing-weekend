@@ -217,9 +217,41 @@ refract(const vec3<T> &v1, const vec3<T> &n, T ni_over_nt, vec3<T> &out) {
         // creating the dot product (dt) is sensitive to the magnitude of v1
         // and we know 'n' is always a unit vector (a promise made by other
         // parts of the ray tracer).
+        //
+        // Sun Aug 23 12:44:02 PDT 2020
+        // The newer edition of the book explains this: basically, it all
+        // depends on this one identity to convert from angles to vectors:
+        //
+        //      a . b = |a| * |b| cos(theta)
+        //
+        // So
+        //
+        //      cos(theta) = (a.b) / (|a| * |b|)
+        //
+        // so we can simplify this if the vectors are already unit vectors to
+        //
+        //      cos(theta) = a.b
 #endif
         return true;
     } else {
         return false;
     }
+}
+
+/**
+ * Refract, according to Snell's law.
+ *
+ * This is from the newer edition of the book, which does a better job of
+ * explaining how the function was actually derived, but expects certain things
+ * to already be done (e.g. already calculate the unit vector).
+ *
+ * All vector parameters must be unit vectors.
+ */
+template<typename T> inline vec3<T>
+refract(const vec3<T> &uv, const vec3<T> &n, T etai_over_etat)
+{
+    T cos_theta = dot(-uv, n);
+    vec3<T> r_out_perpendicular = etai_over_etat * (uv + cos_theta * n);
+    vec3<T> r_out_parallel = -sqrt(fabs(1.0 - r_out_perpendicular.length_squared())) * n;
+    return r_out_perpendicular + r_out_parallel;
 }
