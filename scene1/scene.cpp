@@ -170,19 +170,45 @@ int main() {
 #endif
     sphere floor(vec3<float>(0, -100.5, -1), 100,
               new lambertian(vec3<float>(0.5, 0.5, 0.5)));
-#else
+    hittable *objects[] = {&s1, &s2, &s3, &floor};
+#elif 1
     // This is a scene that shows off refraction.
 	sphere s1(vec3<>(0,0,-1), 0.5, new lambertian(vec3<>(0.1, 0.2, 0.5)));
 	sphere s2(vec3<>(1,0,-1), 0.5, new metal(vec3<>(0.8, 0.6, 0.2), 0.0));
 	sphere s3(vec3<>(-1,0,-1), 0.5, new dielectric(1.5));
 	sphere s4(vec3<>(-1,0,-1), -0.45, new dielectric(1.5)); // inside of bubble
 	sphere floor(vec3<>(0,-100.5,-1), 100, new lambertian(vec3<>(1.8, 0.8, 0.0)));
+    hittable *objects[] = {&s1, &s2, &s3, &s4, &floor};
 #endif
 
-    hittable *objects[] = {&s1, &s2, &s3, &s4, &floor};
     hittable_list list(objects, sizeof(objects)/sizeof(*objects));
 
-    camera cam;
+#if 0
+    // This is the default camera that was used in earlier chapters.
+    camera cam(vec3<>(0, 0, 0), // lookfrom
+               vec3<>(0, 0, -1), // lookat
+               vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
+               90, float(nx)/float(ny));
+#elif 1
+    // This is a different, more interesting camera angle introduced in
+    // chapter 10.
+    camera cam(vec3<>(-2, 2, 1), // lookfrom
+               vec3<>(0, 0, -1), // lookat
+               vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
+               90, float(nx)/float(ny));
+#else
+    // This angle has a really low FOV but zoomed out quite far.  It seems to
+    // have interesting visual artifacts that seems like aliasing of some sort.
+    // I'm curious what the cause of them is: maybe limited resolution based on
+    // floating point precision?  If antialiasing is disabled, it seems like
+    // the issue is mostly around recast rays, not on the initial cast.  I
+    // wonder if there's some bug (or bias) in the code that's supposed to
+    // recast with some randomness.
+    camera cam(vec3<>(0, 0, 100), // lookfrom
+               vec3<>(0, 0, -1), // lookat
+               vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
+               1, float(nx)/float(ny));
+#endif
 
 #if PARALLEL
     auto frame = render_parallel(cam, list, ny, nx);

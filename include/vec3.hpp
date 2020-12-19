@@ -38,7 +38,7 @@ public:
 
     inline T length() const {return sqrt(e[0]*e[0] + e[1]*e[1] + e[2]*e[2]);}
     inline T squared_length() const {return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];}
-    inline vec3 unit_vector() const {return *this/length();}
+    inline vec3<T> unit_vector() const {return *this/length();}
     inline void make_unit_vector();
 
     T e[3];
@@ -105,7 +105,7 @@ dot(const vec3<T> &v1, const vec3<T> &v2) {
     return v1.e[0] * v2.e[0] + v1.e[1] * v2.e[1] + v1.e[2] * v2.e[2];
 }
 
-template<typename T> inline T
+template<typename T> inline vec3<T>
 cross(const vec3<T> &v1, const vec3<T> &v2) {
     return vec3<T>( (v1.e[1] *v2.e[2]) - (v1.e[2] * v2.e[1]),
                     (v1.e[2] *v2.e[0]) - (v1.e[0] * v2.e[2]),
