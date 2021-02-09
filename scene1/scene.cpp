@@ -189,13 +189,22 @@ int main() {
                vec3<>(0, 0, -1), // lookat
                vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
                90, float(nx)/float(ny));
-#elif 1
+#elif 0
     // This is a different, more interesting camera angle introduced in
     // chapter 10.
     camera cam(vec3<>(-2, 2, 1), // lookfrom
                vec3<>(0, 0, -1), // lookat
                vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
                90, float(nx)/float(ny));
+#elif 1
+    // Defocus blur scene
+	vec3<> lookfrom(3,3,2);
+	vec3<> lookat(0,0,-1);
+	vec3<> vup(0,1,0);
+	auto dist_to_focus = (lookfrom-lookat).length();
+	auto aperture = 2.0;
+
+	camera cam(lookfrom, lookat, vup, 20, 2.0, aperture, dist_to_focus);
 #else
     // This angle has a really low FOV but zoomed out quite far.  It seems to
     // have interesting visual artifacts that seems like aliasing of some sort.

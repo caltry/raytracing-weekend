@@ -255,3 +255,14 @@ refract(const vec3<T> &uv, const vec3<T> &n, T etai_over_etat)
     vec3<T> r_out_parallel = -sqrt(fabs(1.0 - r_out_perpendicular.length_squared())) * n;
     return r_out_perpendicular + r_out_parallel;
 }
+
+template<typename T> inline vec3<T>
+random_in_unit_disk()
+{
+    vec3<T> p;
+    do {
+        // TODO fix calls to drand48, use a thread local seed
+        p = (T)2.0 * vec3<T>(drand48(), drand48(), 0) - vec3<T>(1, 1, 0);
+    } while (dot(p,p) >= 1);
+    return p;
+}
