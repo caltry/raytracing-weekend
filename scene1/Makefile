@@ -1,5 +1,5 @@
 INCLUDES += -I../include/
-CXXFLAGS += $(INCLUDES) -O2 -std=c++11
+CXXFLAGS += $(INCLUDES) -O2 -pthread -std=c++11
 
 all: scene.png
 scene.o: $(wildcard ../include/*.hpp ../include/*.h)

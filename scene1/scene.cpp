@@ -1,3 +1,4 @@
+#include <cfloat>
 #include <future>
 #include <iostream>
 #include <list>
@@ -10,7 +11,7 @@
 
 vec3<float> color(const ray<float> &r, const hittable *world, int depth=0) {
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+    if (world->hit(r, 0.001, FLT_MAX, rec)) {
         ray<float> scattered;
         vec3<float> attenuation;
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)){
