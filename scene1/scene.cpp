@@ -146,9 +146,80 @@ render(const camera &cam, const hittable_list &objects, int ny, int nx)
     return output;
 }
 
+hittable_list
+random_scene()
+{
+    std::list<hittable*> object_list;
+
+    auto ground_material = new lambertian(vec3<>(0.5, 0.5, 0.5));
+    object_list.push_back(new sphere(vec3<>(0,-1000,0), 1000, ground_material));
+
+    for(int a = -11; a < 11; a++) {
+        for(int b = -11; b < 11; b++) {
+            // XXX what's my verion of random_double?  erand48()
+            // Is the author making any assumptions about the range of
+            // random_double?
+            auto choose_mat = erand48(rand_seed);
+            vec3<> center(a + 0.9*erand48(rand_seed), 0.2, b + 0.9*erand48(rand_seed));
+
+            if ((center - vec3<>(4, 0.2, 0)).length() > 0.9) {
+                material *sphere_material = nullptr;
+
+                if (choose_mat < 0.8) {
+                    // diffuse
+                    auto albedo = vec3<>(erand48(rand_seed),
+                                         erand48(rand_seed),
+                                         erand48(rand_seed))
+                                * vec3<>(erand48(rand_seed),
+                                         erand48(rand_seed),
+                                         erand48(rand_seed));
+                    sphere_material = new lambertian(albedo);
+                } else if (choose_mat < 0.95) {
+                    // metal
+#if 0
+                    // TODO: one day implement these random functions that the
+                    // newer edition of the book uses.  They're a lot more
+                    // readable.
+                    auto albedo = color::random(0.5, 1);
+                    auto fuzz = random_double(0, 0.5);
+#else
+                    auto albedo = vec3<>(0.5*(1+erand48(rand_seed)),
+                                         0.5*(1+erand48(rand_seed)),
+                                         0.5*(1+erand48(rand_seed)));
+                    auto fuzz = 0.5*erand48(rand_seed);
+#endif
+                    sphere_material = new metal(albedo, fuzz);
+                } else {
+                    // glass
+                    sphere_material = new dielectric(1.5);
+                }
+
+                if (sphere_material) {
+                    object_list.push_back(new sphere(center, 0.2, sphere_material));
+                }
+            }
+        }
+    }
+
+    // hardcoded objects
+    auto material1 = new dielectric(1.5);
+    object_list.push_back(new sphere(vec3<>(0,1,0), 1.0, material1));
+
+    auto material2 = new lambertian(vec3<>(0.4, 0.2, 0.1));
+    object_list.push_back(new sphere(vec3<>(-4, 1, 0), 1.0, material2));
+
+    auto material3 = new metal(vec3<>(0.7, 0.6, 0.5), 0);
+    object_list.push_back(new sphere(vec3<>(4, 1, 0), 1.0, material3));
+
+    hittable_list world(object_list);;
+    return world;
+    // leaking ground_material
+}
+
 int main() {
+    auto aspect_ratio = 3.0/2.0;
     int nx = SCALE * 200;
-    int ny = SCALE * 100;
+    int ny = nx / aspect_ratio;
     int ns = 100;
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
     vec3<float> lower_left_corner(-2.0, -1.0, -1.0);
@@ -156,6 +227,7 @@ int main() {
     vec3<float> vertical(0, 2, 0);
     vec3<float> origin(0, 0, 0);
 
+#if 0
 #if 0
     // This is basically the first scene, but modified as new materials were
     // developed, at least through chapter 8.
@@ -183,6 +255,9 @@ int main() {
 #endif
 
     hittable_list list(objects, sizeof(objects)/sizeof(*objects));
+#else
+    hittable_list list = random_scene();
+#endif
 
 #if 0
     // This is the default camera that was used in earlier chapters.
@@ -197,15 +272,27 @@ int main() {
                vec3<>(0, 0, -1), // lookat
                vec3<>(0.0, 1.0, 0.0), // vup (twisting the camera)
                90, float(nx)/float(ny));
-#elif 1
+#elif 0
     // Defocus blur scene
-	vec3<> lookfrom(3,3,2);
-	vec3<> lookat(0,0,-1);
-	vec3<> vup(0,1,0);
-	auto dist_to_focus = (lookfrom-lookat).length();
-	auto aperture = 2.0;
+    vec3<> lookfrom(3,3,2);
+    vec3<> lookat(0,0,-1);
+    vec3<> vup(0,1,0);
+    auto dist_to_focus = (lookfrom-lookat).length();
+    auto vertical_fov = 20;
+    auto aspect_ratio = 2.0;
+    auto aperture = 2.0;
 
-	camera cam(lookfrom, lookat, vup, 20, 2.0, aperture, dist_to_focus);
+	camera cam(lookfrom, lookat, vup, vertical_fov, aspect_ratio, aperture, dist_to_focus);
+#elif 1
+    // Final, random scene.
+    vec3<> lookfrom(13,2,3);
+    vec3<> lookat(0,0,0);
+    vec3<> vup(0,1,0);
+    auto dist_to_focus = 10.0;
+    auto vertical_fov = 20;
+    auto aperture = 0.1;
+
+    camera cam(lookfrom, lookat, vup, vertical_fov, aspect_ratio, aperture, dist_to_focus);
 #else
     // This angle has a really low FOV but zoomed out quite far.  It seems to
     // have interesting visual artifacts that seems like aliasing of some sort.
