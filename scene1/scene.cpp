@@ -82,7 +82,7 @@ std::list<std::vector<vec3<> > >
 render_rows(const camera &cam, const hittable_list &objects, int ny, int nx,
             int startRow, int endRow)
 {
-    int numRows = endRow-startRow;
+    int numRows = 0;
     std::list<std::vector<vec3<> > > output;
     int rowMultiplier = 0;
     for(int j = endRow-1; j >= startRow; j--) {
@@ -92,8 +92,11 @@ render_rows(const camera &cam, const hittable_list &objects, int ny, int nx,
         }
         output.push_back(row);
         rowMultiplier += nx;
+        numRows++;
     }
 
+    std::cerr << "Render Done [" << startRow << "," << endRow << ")"
+              << ", rows=" << numRows << std::endl;
     return output;
 }
 
