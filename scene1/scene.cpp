@@ -116,10 +116,10 @@ render_parallel(const camera &cam, const hittable_list &objects, int ny, int nx)
     typedef std::list<std::vector<vec3<> > > RenderedRow;
     std::list<std::future<RenderedRow> > futures;
     int threads = std::thread::hardware_concurrency();
-    int rowsPerThread = ny / threads;
+    int rowsPerThread = ceil((double)ny / threads);
     for(int j = ny-1; j >= 0; j -= rowsPerThread) {
         futures.push_back(std::async
-            (render_rows, cam, objects, ny, nx, j + 1 - rowsPerThread, j+1));
+            (render_rows, cam, objects, ny, nx, fmax(j + 1 - rowsPerThread,0), j+1));
         fprintf(stderr, "render_parallel: started future\n");
     }
 
